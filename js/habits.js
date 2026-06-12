@@ -93,6 +93,12 @@ const K_Habits = {
             const isDone = habit.completedDates.includes(today);
             return `
                 <div class="habit-card-v2 glass-v2 ${isDone ? 'is-completed' : ''}" onclick="K_Habits.toggleHabit(${habit.id}, event)">
+             
+                <button class="habit-delete-btn"
+                onclick="K_Habits.deleteHabit(${habit.id}, event)"
+                title="Delete Habit">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
                     <div class="habit-card-body">
                         <div class="habit-info">
                             <div class="habit-icon-wrap" style="background: ${habit.color}20; color: ${habit.color}">
@@ -164,6 +170,26 @@ const K_Habits = {
         }
 
         K_Storage.save(data);
+        this.render();
+    },
+
+    deleteHabit(id, event) {
+        event.stopPropagation();
+
+        const confirmDelete = confirm(
+            "Delete this habit permanently?"
+        );
+
+        if (!confirmDelete) return;
+
+        const data = K_Storage.getData();
+
+        data.habits = data.habits.filter(
+            h => h.id !== id
+        );
+
+        K_Storage.save(data);
+
         this.render();
     },
 
