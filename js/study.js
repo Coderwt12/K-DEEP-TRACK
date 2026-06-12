@@ -1,137 +1,187 @@
 /**
- * STUDY MODULE
+ * K-DEEP XP - PREMIUM STUDY ZONE (FOCUS OS)
  */
 const K_Study = {
     timerInterval: null,
-    timeLeft: 25 * 60, // Default 25 mins
+    timeLeft: 1500, // Default 25 mins
     isRunning: false,
-    selectedSubject: 'General',
+    currentSubject: 'Physics',
+    sessionStartTime: null,
+    totalSecondsElapsed: 0,
 
     template: `
-        <div class="study-wrapper">
-            <div class="view-header">
-                <h1>Study Zone</h1>
-                <div class="subject-picker">
-                    <select id="subject-select" class="glass-input">
-                        <option value="Programming">Programming</option>
-                        <option value="Mathematics">Mathematics</option>
-                        <option value="Design">Design</option>
-                        <option value="Exam Prep">Exam Prep</option>
-                        <option value="General">General</option>
-                    </select>
+        <div class="study-view-container view-animate">
+            <!-- TOP ANALYTICS PREVIEW -->
+            <div class="study-stats-grid">
+                <div class="mini-stat-card glass-v2">
+                    <span class="label">TODAY'S FOCUS</span>
+                    <h3 id="stat-today-time">0h 0m</h3>
+                </div>
+                <div class="mini-stat-card glass-v2">
+                    <span class="label">TOTAL SESSIONS</span>
+                    <h3 id="stat-total-sessions">0</h3>
+                </div>
+                <div class="mini-stat-card glass-v2">
+                    <span class="label">STUDY XP</span>
+                    <h3 id="stat-study-xp">0</h3>
                 </div>
             </div>
 
-            <div class="timer-container glass">
-                <div class="timer-display" id="timer-display">25:00</div>
+            <!-- DYNAMIC ISLAND TIMER -->
+            <section class="timer-section glass-v2">
+                <div class="subject-selector">
+                    <button class="sub-pill active" onclick="K_Study.setSubject('Physics', this)">Physics</button>
+                    <button class="sub-pill" onclick="K_Study.setSubject('Chemistry', this)">Chemistry</button>
+                    <button class="sub-pill" onclick="K_Study.setSubject('Maths', this)">Maths</button>
+                    <button class="sub-pill" onclick="K_Study.setSubject('English', this)">English</button>
+                    <button class="sub-pill" onclick="K_Study.setSubject('Custom', this)">Custom</button>
+                </div>
+
+                <div class="dynamic-island-timer">
+                    <div class="timer-display" id="main-timer">25:00</div>
+                    <div class="timer-label" id="timer-status">READY TO FOCUS</div>
+                </div>
+
                 <div class="timer-controls">
-                    <button id="start-timer" class="btn-primary" onclick="K_Study.toggleTimer()">START</button>
-                    <button id="reset-timer" class="btn-secondary" onclick="K_Study.resetTimer()">RESET</button>
+                    <button id="btn-start" class="btn-primary main-ctrl" onclick="K_Study.toggleTimer()">
+                        <i class="fas fa-play"></i> START SESSION
+                    </button>
+                    <button id="btn-stop" class="btn-secondary stop-ctrl hidden" onclick="K_Study.stopTimer()">
+                        <i class="fas fa-stop"></i>
+                    </button>
                 </div>
-                <div class="timer-modes">
-                    <button onclick="K_Study.setMode(25)">25m</button>
-                    <button onclick="K_Study.setMode(50)">50m</button>
-                    <button onclick="K_Study.setMode(5)">Break</button>
-                </div>
-            </div>
+            </section>
 
-            <div class="history-section glass">
-                <h3>Recent Sessions</h3>
-                <div id="study-history-list" class="history-list"></div>
-            </div>
+            <!-- FOCUS MODES -->
+            <section class="focus-modes-grid">
+                <div class="mode-card glass-v2" onclick="K_Study.setMode('pomodoro')">
+                    <i class="fas fa-apple-alt"></i>
+                    <h4>Pomodoro</h4>
+                    <small>25 / 5 min</small>
+                </div>
+                <div class="mode-card glass-v2" onclick="K_Study.setMode('deepwork')">
+                    <i class="fas fa-brain"></i>
+                    <h4>Deep Work</h4>
+                    <small>50 / 10 min</small>
+                </div>
+                <div class="mode-card glass-v2" onclick="K_Study.setMode('marathon')">
+                    <i class="fas fa-infinity"></i>
+                    <h4>Marathon</h4>
+                    <small>90 / 15 min</small>
+                </div>
+            </section>
         </div>
     `,
 
     init() {
-        this.renderHistory();
+        this.renderStats();
         this.updateTimerDisplay();
     },
 
-    setMode(mins) {
-        this.stopTimer();
-        this.timeLeft = mins * 60;
+    setSubject(sub, el) {
+        this.currentSubject = sub;
+        document.querySelectorAll('.sub-pill').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+    },
+
+    setMode(mode) {
+        if(this.isRunning) return;
+        if(mode === 'pomodoro') this.timeLeft = 25 * 60;
+        if(mode === 'deepwork') this.timeLeft = 50 * 60;
+        if(mode === 'marathon') this.timeLeft = 90 * 60;
         this.updateTimerDisplay();
     },
 
     toggleTimer() {
+        const btn = document.getElementById('btn-start');
+        const stopBtn = document.getElementById('btn-stop');
+
         if (this.isRunning) {
-            this.stopTimer();
+            // PAUSE
+            clearInterval(this.timerInterval);
+            this.isRunning = false;
+            btn.innerHTML = `<i class="fas fa-play"></i> RESUME`;
+            document.getElementById('timer-status').innerText = "PAUSED";
         } else {
-            this.startTimer();
+            // START
+            this.isRunning = true;
+            this.sessionStartTime = new Date();
+            btn.innerHTML = `<i class="fas fa-pause"></i> PAUSE`;
+            stopBtn.classList.remove('hidden');
+            document.getElementById('timer-status').innerText = `FOCUSING ON ${this.currentSubject.toUpperCase()}`;
+            
+            this.timerInterval = setInterval(() => {
+                this.timeLeft--;
+                this.totalSecondsElapsed++;
+                this.updateTimerDisplay();
+                if (this.timeLeft <= 0) this.stopTimer();
+            }, 1000);
         }
-    },
-
-    startTimer() {
-        this.isRunning = true;
-        document.getElementById('start-timer').innerText = "PAUSE";
-        this.timerInterval = setInterval(() => {
-            this.timeLeft--;
-            this.updateTimerDisplay();
-            if (this.timeLeft <= 0) {
-                this.completeSession();
-            }
-        }, 1000);
-    },
-
-    stopTimer() {
-        this.isRunning = false;
-        clearInterval(this.timerInterval);
-        document.getElementById('start-timer').innerText = "START";
-    },
-
-    resetTimer() {
-        this.stopTimer();
-        this.timeLeft = 25 * 60;
-        this.updateTimerDisplay();
     },
 
     updateTimerDisplay() {
         const mins = Math.floor(this.timeLeft / 60);
         const secs = this.timeLeft % 60;
-        const display = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        document.getElementById('timer-display').innerText = display;
+        document.getElementById('main-timer').innerText = 
+            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     },
 
-    completeSession() {
-        this.stopTimer();
-        const subject = document.getElementById('subject-select').value;
-        const durationMins = 25; // Logic: calculate based on mode
-        const xpAmount = durationMins * 2; // 2 XP per minute
-
-        K_Storage.addStudyLog({
-            subject: subject,
-            duration: durationMins,
-            xpEarned: xpAmount
-        });
-
-        K_Engine.addXP(xpAmount);
-        alert(`Session Complete! You earned ${xpAmount} XP.`);
+    stopTimer() {
+        clearInterval(this.timerInterval);
+        const minutesStudied = Math.floor(this.totalSecondsElapsed / 60);
         
-        // Dispatch Global UI Update
-        const xpEvent = new CustomEvent('xpGain', { 
-            detail: { amount: xpAmount, x: window.innerWidth / 2, y: window.innerHeight / 2 } 
-        });
-        window.dispatchEvent(xpEvent);
-
-        this.renderHistory();
-        this.resetTimer();
-    },
-
-    renderHistory() {
-        const logs = K_Storage.getData().studyLogs.slice().reverse().slice(0, 5);
-        const container = document.getElementById('study-history-list');
-        
-        if (logs.length === 0) {
-            container.innerHTML = `<p class="text-dim">No sessions logged yet.</p>`;
-            return;
+        if (minutesStudied > 0) {
+            this.saveSession(minutesStudied);
         }
 
-        container.innerHTML = logs.map(log => `
-            <div class="history-item">
-                <span>${log.subject}</span>
-                <span>${log.duration} mins</span>
-                <span class="accent">+${log.xpEarned} XP</span>
-            </div>
-        `).join('');
+        // Reset UI
+        this.isRunning = false;
+        this.totalSecondsElapsed = 0;
+        this.timeLeft = 1500;
+        document.getElementById('btn-start').innerHTML = `<i class="fas fa-play"></i> START SESSION`;
+        document.getElementById('btn-stop').classList.add('hidden');
+        document.getElementById('timer-status').innerText = "SESSION COMPLETE";
+        this.updateTimerDisplay();
+        this.renderStats();
+    },
+
+    saveSession(mins) {
+        const xpEarned = mins * 2; // 2 XP per minute
+        const data = K_Storage.getData();
+        
+        const newLog = {
+            id: Date.now(),
+            subject: this.currentSubject,
+            duration: mins,
+            xpEarned: xpEarned,
+            timestamp: new Date().toISOString()
+        };
+
+        data.studyLogs.push(newLog);
+        K_Storage.save(data);
+        
+        // XP Reward Logic
+        if(window.K_Engine) K_Engine.addXP(xpEarned);
+        
+        // Popup
+        if(window.K_App && K_App.showXpPopup) {
+            K_App.showXpPopup(xpEarned, window.innerWidth/2, window.innerHeight/2);
+        }
+        
+        alert(`Great Work! You studied ${this.currentSubject} for ${mins} mins and earned ${xpEarned} XP.`);
+    },
+
+    renderStats() {
+        const data = K_Storage.getData();
+        const logs = data.studyLogs || [];
+        const today = new Date().toISOString().split('T')[0];
+        
+        const todayLogs = logs.filter(l => l.timestamp.split('T')[0] === today);
+        const todayMins = todayLogs.reduce((acc, curr) => acc + curr.duration, 0);
+        const totalXP = logs.reduce((acc, curr) => acc + curr.xpEarned, 0);
+        
+        document.getElementById('stat-today-time').innerText = `${Math.floor(todayMins/60)}h ${todayMins%60}m`;
+        document.getElementById('stat-total-sessions').innerText = logs.length;
+        document.getElementById('stat-study-xp').innerText = totalXP;
     }
 };
