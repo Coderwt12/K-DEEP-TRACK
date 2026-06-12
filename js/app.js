@@ -27,12 +27,19 @@ const K_App = {
     },
 
     bindEvents() {
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                const view = e.currentTarget.getAttribute('data-view');
-                this.switchView(view);
-            });
-        });
+       document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+
+        const view = item.dataset.view;
+        this.switchView(view);
+
+        // MOBILE AUTO CLOSE
+        if (window.innerWidth <= 768) {
+            document.querySelector('.sidebar')
+                .classList.remove('active');
+        }
+    });
+});
 
         window.addEventListener('xpGain', (e) => {
             this.showXpPopup(e.detail.amount, e.detail.x, e.detail.y);
