@@ -11,6 +11,10 @@
     --shadow-glow: 0 0 20px rgba(6, 182, 212, 0.2);
 }
 
+
+html{
+scroll-behavior:smooth;
+}
 * {
     margin: 0;
     padding: 0;
@@ -1477,4 +1481,18 @@ body {
         flex: 1;
         min-width: 120px;
     }
+}
+.view-animate{
+animation:fadeUp .5s ease;
+}
+
+@keyframes fadeUp{
+from{
+opacity:0;
+transform:translateY(20px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
 }
