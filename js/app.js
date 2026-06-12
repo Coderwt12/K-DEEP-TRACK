@@ -208,9 +208,10 @@ const ParticleEngine = {
     }
 };
 
-window.onload = () =>
+window.onload = () => {
     K_App.init();
-ParticleEngine.init();
+    ParticleEngine.init();
+};
 document.addEventListener("mousemove", (e) => {
 
     document.querySelectorAll(".tilt-card").forEach(card => {
