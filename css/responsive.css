@@ -1,14 +1,32 @@
 /* Tablet & Small Laptops */
 @media (max-width: 1024px) {
-    :root { --sidebar-width: 80px; }
-    .logo-text, .nav-links span, .version-tag { display: none; }
-    .nav-links li { justify-content: center; padding: 1.2rem; }
-    .top-bar { gap: 1rem; padding: 1rem; }
+    :root {
+        --sidebar-width: 80px;
+    }
+
+    .logo-text,
+    .nav-links span,
+    .version-tag {
+        display: none;
+    }
+
+    .nav-links li {
+        justify-content: center;
+        padding: 1.2rem;
+    }
+
+    .top-bar {
+        gap: 1rem;
+        padding: 1rem;
+    }
 }
 
 /* Mobile Devices */
 @media (max-width: 768px) {
-    .app-container { flex-direction: column; }
+    .app-container {
+        flex-direction: column;
+    }
+
     .sidebar {
         width: 100%;
         height: 60px;
@@ -22,17 +40,87 @@
         justify-content: space-around;
         border-radius: 20px 20px 0 0;
     }
-    .main-content { margin-left: 0; padding: 1rem; padding-bottom: 80px; }
-    .logo-area { display: none; }
-    .nav-links { margin-top: 0; flex-direction: row; width: 100%; justify-content: space-around; }
-    .nav-links li { margin-bottom: 0; }
-    .top-bar { flex-wrap: wrap; height: auto; }
-    .xp-container { order: 3; width: 100%; }
-    .stat-badge, .streak-badge { flex: 1; justify-content: center; }
+
+    .main-content {
+        margin-left: 0;
+        padding: 1rem;
+        padding-bottom: 80px;
+    }
+
+    .logo-area {
+        display: none;
+    }
+
+    .nav-links {
+        margin-top: 0;
+        flex-direction: row;
+        width: 100%;
+        justify-content: space-around;
+    }
+
+    .nav-links li {
+        margin-bottom: 0;
+    }
+
+    .top-bar {
+        flex-wrap: wrap;
+        height: auto;
+    }
+
+    .xp-container {
+        order: 3;
+        width: 100%;
+    }
+
+    .stat-badge,
+    .streak-badge {
+        flex: 1;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
-    .habit-grid { grid-template-columns: 1fr; }
-    .top-bar { padding: 0.8rem; }
-    .stat-badge .value { font-size: 1.1rem; }
+    .habit-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .top-bar {
+        padding: 0.8rem;
+    }
+
+    .stat-badge .value {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width:768px) {
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 260px;
+        height: 100vh;
+        z-index: 9999;
+        transition: left .3s ease;
+    }
+
+    .sidebar.mobile-open {
+        left: 0;
+    }
+
+    .mobile-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
 }

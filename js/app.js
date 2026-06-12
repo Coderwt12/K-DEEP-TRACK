@@ -14,8 +14,14 @@ const K_App = {
         }
 
         this.bindEvents();
+        this.setupMobileMenu();
+
         this.updateGlobalUI();
         this.switchView('dashboard');
+
+        document
+            .querySelector('.sidebar')
+            ?.classList.remove('mobile-open');
 
         K_Engine.updateStreak();
     },
@@ -32,6 +38,18 @@ const K_App = {
             this.showXpPopup(e.detail.amount, e.detail.x, e.detail.y);
             this.updateGlobalUI();
         });
+    },
+    setupMobileMenu() {
+
+        const btn = document.getElementById('menu-toggle');
+        const sidebar = document.querySelector('.sidebar');
+
+        if (!btn || !sidebar) return;
+
+        btn.addEventListener('click', () => {
+            sidebar.classList.toggle('mobile-open');
+        });
+
     },
 
     switchView(viewName) {
@@ -126,66 +144,66 @@ const K_App = {
 
 
 const ParticleEngine = {
-    canvas:null,
-    ctx:null,
-    particles:[],
+    canvas: null,
+    ctx: null,
+    particles: [],
 
-    init(){
-        this.canvas=document.createElement('canvas');
-        this.canvas.id='particle-canvas';
+    init() {
+        this.canvas = document.createElement('canvas');
+        this.canvas.id = 'particle-canvas';
 
         document.body.prepend(this.canvas);
 
-        this.ctx=this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext('2d');
 
         this.resize();
 
-        window.addEventListener('resize',()=>this.resize());
+        window.addEventListener('resize', () => this.resize());
 
-        for(let i=0;i<40;i++){
+        for (let i = 0; i < 40; i++) {
             this.particles.push({
-                x:Math.random()*window.innerWidth,
-                y:Math.random()*window.innerHeight,
-                size:Math.random()*3,
-                vx:(Math.random()-0.5)*0.5,
-                vy:(Math.random()-0.5)*0.5
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * window.innerHeight,
+                size: Math.random() * 3,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: (Math.random() - 0.5) * 0.5
             });
         }
 
         this.animate();
     },
 
-    resize(){
-        this.canvas.width=window.innerWidth;
-        this.canvas.height=window.innerHeight;
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
     },
 
-    animate(){
-        this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+    animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        this.particles.forEach(p=>{
+        this.particles.forEach(p => {
 
-            p.x+=p.vx;
-            p.y+=p.vy;
+            p.x += p.vx;
+            p.y += p.vy;
 
             this.ctx.beginPath();
-            this.ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+            this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
 
-            this.ctx.fillStyle='#06b6d4';
+            this.ctx.fillStyle = '#06b6d4';
             this.ctx.fill();
 
-            if(p.x<0||p.x>this.canvas.width) p.vx*=-1;
-            if(p.y<0||p.y>this.canvas.height) p.vy*=-1;
+            if (p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
+            if (p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
 
         });
 
-        requestAnimationFrame(()=>this.animate());
+        requestAnimationFrame(() => this.animate());
     }
 };
 
 window.onload = () =>
-     K_App.init(); 
-    ParticleEngine.init();
+    K_App.init();
+ParticleEngine.init();
 document.addEventListener("mousemove", (e) => {
 
     document.querySelectorAll(".tilt-card").forEach(card => {
