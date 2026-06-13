@@ -15,8 +15,13 @@ const K_Storage = {
             totalXp: 0,
             streak: 0,
             lastActive: null,
-            badges: []
+            badges: [],
+
+            avatar: "",
+            theme: "dark",
+            accent: "#06b6d4"
         },
+
         habits: [],
         studyLogs: [],
         journal: [],
@@ -86,7 +91,7 @@ const K_Storage = {
         const data = this.getData();
         const today = new Date().toISOString().split('T')[0];
         const index = data.journal.findIndex(j => j.date === today);
-        
+
         const journalData = {
             date: today,
             ...entry,
@@ -98,7 +103,7 @@ const K_Storage = {
         } else {
             data.journal.push(journalData);
         }
-        
+
         this.save(data);
         return journalData;
     }
