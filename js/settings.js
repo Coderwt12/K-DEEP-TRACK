@@ -133,6 +133,43 @@ Not Logged In
 
         // Apply saved visual states
         this.loadVisualStates();
+
+        const user = firebase.auth().currentUser;
+
+        if (user) {
+
+            document.getElementById("user-box").innerHTML = `
+
+    <div style="
+    display:flex;
+    align-items:center;
+    gap:12px;
+    ">
+
+        <img src="${user.photoURL}"
+        style="
+        width:55px;
+        height:55px;
+        border-radius:50%;
+        ">
+
+        <div>
+
+        <h4>${user.displayName}</h4>
+
+        <p style="
+        opacity:.7;
+        font-size:14px;
+        ">
+        ${user.email}
+        </p>
+
+        </div>
+
+    </div>
+
+    `;
+        }
     },
 
     updateUsername() {

@@ -39,12 +39,11 @@ const K_Storage = {
             JSON.stringify(data)
         );
 
-        if (window.auth && window.auth.currentUser) {
+        if (firebase.auth().currentUser) {
 
             window.saveUserData(data);
 
         }
-
     },
 
     // Retrieve Data

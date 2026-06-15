@@ -6,7 +6,7 @@
  */
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCBkFgB7KvNb-LChHyaMRi69WitFrpzgPM",``
+    apiKey: "AIzaSyCBkFgB7KvNb-LChHyaMRi69WitFrpzgPM",
     authDomain: "k-deep-track.firebaseapp.com",
     projectId: "k-deep-track",
     storageBucket: "k-deep-track.firebasestorage.app",
@@ -18,6 +18,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
+const db = firebase.firestore();
 const provider = new firebase.auth.GoogleAuthProvider();
 
 /**
@@ -102,3 +103,26 @@ auth.onAuthStateChanged((user) => {
         }
     }
 });
+window.saveUserData = async function(data){
+
+    const user = auth.currentUser;
+
+    if(!user) return;
+
+    try{
+
+        await db.collection("users")
+        .doc(user.uid)
+        .set(data);
+
+        console.log("Data Saved To Firestore");
+
+    }
+
+    catch(err){
+
+        console.log(err);
+
+    }
+
+}
