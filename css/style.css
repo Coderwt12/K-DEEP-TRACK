@@ -1989,14 +1989,15 @@ body {
 
 .sidebar-logo {
 
-    width: 280px;
+    width: 220px;
+
+    max-width: 90%;
 
     height: auto;
 
     object-fit: contain;
 
-    filter:
-        drop-shadow(0 0 10px rgba(0, 255, 255, .4)) drop-shadow(0 0 20px rgba(139, 92, 246, .3));
+    filter: drop-shadow(0 0 10px rgba(0, 255, 255, .4)) drop-shadow(0 0 20px rgba(139, 92, 246, .3));
 
     display: block;
 
@@ -2013,5 +2014,35 @@ body {
     align-items: center;
 
     padding: 20px 0;
+
+}
+
+.mobile-header{
+
+display:none;
+
+}
+
+.mobile-logo{
+
+width:140px;
+
+height:auto;
+
+object-fit:contain;
+
+}
+
+#menu-toggle{
+
+background:none;
+
+border:none;
+
+color:white;
+
+font-size:28px;
+
+cursor:pointer;
 
 }

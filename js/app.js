@@ -247,3 +247,20 @@ document.addEventListener("mouseleave", () => {
     });
 
 });
+document.addEventListener("DOMContentLoaded",()=>{
+
+const menuBtn=document.getElementById("menu-toggle");
+
+const sidebar=document.querySelector(".sidebar");
+
+if(menuBtn){
+
+menuBtn.addEventListener("click",()=>{
+
+sidebar.classList.toggle("mobile-open");
+
+});
+
+}
+
+});
