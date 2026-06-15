@@ -1,5 +1,12 @@
+/**
+ * K-DEEP XP - SIMPLE FIREBASE AUTH (COMPAT SDK)
+ * Ensure these tags are in your index.html:
+ * <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+ * <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+ */
+
 const firebaseConfig = {
-    apiKey: "AIzaSyCBkFgB7KvNb-LChHyaMRi69WitFrpzgPM",
+    apiKey: "AIzaSyCBkFgB7KvNb-LChHyaMRi69WitFrpzgPM",``
     authDomain: "k-deep-track.firebaseapp.com",
     projectId: "k-deep-track",
     storageBucket: "k-deep-track.firebasestorage.app",
@@ -10,88 +17,88 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Services
 const auth = firebase.auth();
-const db = firebase.firestore();
+const provider = new firebase.auth.GoogleAuthProvider();
 
-const googleProvider = new firebase.auth.GoogleAuthProvider();
+/**
+ * Global Login Function
+ */
+let isLoggingIn = false;
 
-window.auth = auth;
-window.db = db;
+window.signInWithGoogle = async function () {
 
+    if (isLoggingIn) return;
 
-// Google Login
+    isLoggingIn = true;
 
-window.signInWithGoogle = function () {
+    try {
 
-    auth.signInWithPopup(googleProvider)
+        const result = await auth.signInWithPopup(provider);
 
-        .then((result) => {
+        console.log("Login Successful");
 
-            console.log("User Name:", result.user.displayName);
+    }
 
-            console.log("Email:", result.user.email);
+    catch (error) {
 
-            console.log("Photo:", result.user.photoURL);
+        console.log(error.message);
 
-        })
+    }
 
-        .catch((error) => {
+    finally {
 
-            console.error(error);
+        isLoggingIn = false;
 
-        });
+    }
 
 };
 
-
-// Logout
-
+/**
+ * Global Logout Function
+ */
 window.logoutUser = function () {
-
     auth.signOut()
-
         .then(() => {
-
-            console.log("Logged out");
-
+            console.log("Logged Out Successfully");
         })
-
         .catch((error) => {
-
-            console.error(error);
-
+            console.error("Logout Error:", error.message);
         });
-
 };
 
-auth.onAuthStateChanged(function (user) {
-
-    const box = document.getElementById("user-box");
-
-    // Agar settings page open nahi hai
-    if (!box) return;
+/**
+ * Auth State Observer
+ */
+auth.onAuthStateChanged((user) => {
+    const userBox = document.getElementById('user-box');
 
     if (user) {
+        // Console Logs
+        console.log("Logged In");
+        console.log("User:", user.displayName);
 
-        box.innerHTML = `
-            <img src="${user.photoURL}"
-            width="60"
-            height="60"
-            style="border-radius:50%;">
+        // UI Update for #user-box
+        if (userBox) {
+            userBox.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.05);">
+                    <img src="${user.photoURL}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%;">
+                    <div>
+                        <div style="font-weight: bold; font-size: 0.9rem;">${user.displayName}</div>
+                        <div style="font-size: 0.75rem; opacity: 0.7;">${user.email}</div>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        console.log("Not Logged In");
 
-            <h3>${user.displayName}</h3>
-
-            <p>${user.email}</p>
-        `;
-
+        // UI Update for #user-box
+        if (userBox) {
+            userBox.innerHTML = `
+                <div style="padding: 10px; text-align: center; color: #a1a1aa; font-size: 0.8rem;">
+                    Not Logged In
+                </div>
+            `;
+        }
     }
-
-    else {
-
-        box.innerHTML = "Not Logged In";
-
-    }
-
 });
-``

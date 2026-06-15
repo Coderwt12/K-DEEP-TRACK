@@ -33,7 +33,18 @@ const K_Storage = {
 
     // Save Data to Local Storage
     save(data) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(data)
+        );
+
+        if (window.auth && window.auth.currentUser) {
+
+            window.saveUserData(data);
+
+        }
+
     },
 
     // Retrieve Data

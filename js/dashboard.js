@@ -96,9 +96,13 @@ const K_Dashboard = {
         </div>
     `,
 
-    init() {
-        this.renderStats();
-    },
+   init() {
+
+    this.renderStats();
+
+    this.renderWeeklyChart();
+
+},
 
     renderStats() {
         const data = K_Storage.getData();
@@ -147,5 +151,81 @@ const K_Dashboard = {
                 `;
             }).join('');
         }
-    }
+    },
+    renderWeeklyChart() {
+
+    const data = K_Storage.getData();
+
+    const logs = data.studyLogs || [];
+
+    const chart =
+        document.getElementById("weekly-xp-chart");
+
+    if (!chart) return;
+
+    const durations =
+        [0, 0, 0, 0, 0, 0, 0];
+
+    const labels =
+        ["M", "T", "W", "T", "F", "S", "S"];
+
+
+    logs.forEach(log => {
+
+        const d = new Date(log.timestamp);
+
+        let day = d.getDay();
+
+        day = day === 0 ? 6 : day - 1;
+
+        durations[day] += log.duration;
+
+    });
+
+
+    const max =
+        Math.max(...durations, 1);
+
+    const today =
+        new Date().getDay() === 0
+
+            ? 6
+
+            : new Date().getDay() - 1;
+
+
+    chart.innerHTML =
+
+        durations.map((dur, i) => {
+
+            const height =
+
+                dur === 0
+
+                    ? 10
+
+                    : (dur / max) * 100;
+
+
+            return `
+
+<div class="chart-column">
+
+<div
+
+class="bar ${i===today?"active":""}"
+
+style="height:${height}%">
+
+</div>
+
+<span>${labels[i]}</span>
+
+</div>
+
+`;
+
+        }).join("");
+
+},
 };
