@@ -183,5 +183,7 @@ const K_Study = {
         document.getElementById('stat-today-time').innerText = `${Math.floor(todayMins/60)}h ${todayMins%60}m`;
         document.getElementById('stat-total-sessions').innerText = logs.length;
         document.getElementById('stat-study-xp').innerText = totalXP;
+
+        
     }
 };
