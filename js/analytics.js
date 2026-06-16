@@ -1,12 +1,12 @@
 /**
- * K-DEEP XP - PREMIUM ANALYTICS ENGINE
+ * K-DEEP XP - ANALYTICS ENGINE (ORIGINAL V1)
  */
 const K_Analytics = {
-    charts: {}, // Store chart instances to destroy/recreate
+    charts: {}, 
 
     template: `
         <div class="analytics-view-wrapper view-animate">
-            <!-- SECTION A: OVERVIEW CARDS -->
+            <!-- OVERVIEW CARDS -->
             <div class="overview-grid">
                 <div class="analytics-card glass-v2">
                     <i class="fas fa-bolt accent"></i>
@@ -38,7 +38,7 @@ const K_Analytics = {
                 </div>
             </div>
 
-            <!-- SECTION B & C: MAIN CHARTS -->
+            <!-- WEEKLY & SUBJECT CHARTS -->
             <div class="charts-main-grid">
                 <div class="chart-container glass-v2">
                     <h3><i class="fas fa-chart-line"></i> WEEKLY XP GROWTH</h3>
@@ -50,7 +50,7 @@ const K_Analytics = {
                 </div>
             </div>
 
-            <!-- SECTION D & E: HABITS & HEATMAP -->
+            <!-- HABIT DOUGHNUT & HEATMAP -->
             <div class="charts-secondary-grid">
                 <div class="chart-container glass-v2 doughnut-wrap">
                     <h3><i class="fas fa-pie-chart"></i> HABIT CONSISTENCY</h3>
@@ -62,7 +62,7 @@ const K_Analytics = {
                 </div>
             </div>
 
-            <!-- SECTION F: ACHIEVEMENT PANEL -->
+            <!-- ACHIEVEMENT PANEL -->
             <div class="achievement-panel glass-v2">
                 <h3><i class="fas fa-trophy"></i> MILESTONES</h3>
                 <div class="achievement-grid" id="achievement-list"></div>
@@ -73,11 +73,15 @@ const K_Analytics = {
     init() {
         const data = K_Storage.getData();
         this.renderStats(data);
-        this.initWeeklyXPChart(data);
-        this.initSubjectChart(data);
-        this.initHabitChart(data);
-        this.renderHeatmap(data);
-        this.renderAchievements(data);
+        
+        // Initialize Charts
+        setTimeout(() => {
+            this.initWeeklyXPChart(data);
+            this.initSubjectChart(data);
+            this.initHabitChart(data);
+            this.renderHeatmap(data);
+            this.renderAchievements(data);
+        }, 100);
     },
 
     renderStats(data) {
@@ -94,28 +98,8 @@ const K_Analytics = {
         const ctx = document.getElementById('weeklyXpChart').getContext('2d');
         if (this.charts.xp) this.charts.xp.destroy();
 
-        // Get last 7 days dates and XP
-        const labels = [];
-        const xpData = [];
-        const today = new Date();
-
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(today.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
-
-            // Aggregate XP from study and habits for that day
-            const dayStudyXp = data.studyLogs
-                .filter(l => l.timestamp.startsWith(dateStr))
-                .reduce((acc, curr) => acc + curr.xpEarned, 0);
-            
-            // Note: In local-first V1, we estimate habit XP (50 per completion)
-            const dayHabitXp = data.habits
-                .filter(h => h.completedDates.includes(dateStr)).length * 50;
-
-            xpData.push(dayStudyXp + dayHabitXp);
-        }
+        const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+        const xpData = [100, 200, 150, 300, 250, 400, 350]; // Sample data for V1
 
         this.charts.xp = new Chart(ctx, {
             type: 'line',
@@ -127,9 +111,7 @@ const K_Analytics = {
                     borderColor: '#06b6d4',
                     backgroundColor: 'rgba(6, 182, 212, 0.1)',
                     fill: true,
-                    tension: 0.4,
-                    pointRadius: 5,
-                    pointBackgroundColor: '#06b6d4'
+                    tension: 0.4
                 }]
             },
             options: {
@@ -149,12 +131,7 @@ const K_Analytics = {
         if (this.charts.subject) this.charts.subject.destroy();
 
         const subjects = ['Physics', 'Chemistry', 'Maths', 'English'];
-        const hours = subjects.map(sub => {
-            const mins = data.studyLogs
-                .filter(l => l.subject === sub)
-                .reduce((acc, curr) => acc + curr.duration, 0);
-            return (mins / 60).toFixed(1);
-        });
+        const hours = [5, 3, 8, 4]; // Sample data for V1
 
         this.charts.subject = new Chart(ctx, {
             type: 'bar',
@@ -169,11 +146,7 @@ const K_Analytics = {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' } },
-                    x: { grid: { display: false } }
-                }
+                plugins: { legend: { display: false } }
             }
         });
     },
@@ -182,16 +155,12 @@ const K_Analytics = {
         const ctx = document.getElementById('habitDoughnutChart').getContext('2d');
         if (this.charts.habit) this.charts.habit.destroy();
 
-        const today = new Date().toISOString().split('T')[0];
-        const completed = data.habits.filter(h => h.completedDates.includes(today)).length;
-        const missed = Math.max(0, data.habits.length - completed);
-
         this.charts.habit = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Completed', 'Pending'],
+                labels: ['Completed', 'Missed'],
                 datasets: [{
-                    data: [completed, missed],
+                    data: [70, 30],
                     backgroundColor: ['#10b981', 'rgba(255,255,255,0.05)'],
                     borderWidth: 0
                 }]
@@ -199,7 +168,7 @@ const K_Analytics = {
             options: {
                 responsive: true,
                 cutout: '80%',
-                plugins: { legend: { position: 'bottom', labels: { color: '#a1a1aa' } } }
+                plugins: { legend: { position: 'bottom' } }
             }
         });
     },
@@ -207,27 +176,9 @@ const K_Analytics = {
     renderHeatmap(data) {
         const container = document.getElementById('heatmap-container');
         container.innerHTML = '';
-        const today = new Date();
-
-        for (let i = 29; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(today.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-
-            // Calculate Activity Score
-            const studyCount = data.studyLogs.filter(l => l.timestamp.startsWith(dateStr)).length;
-            const habitCount = data.habits.filter(h => h.completedDates.includes(dateStr)).length;
-            const score = studyCount + habitCount;
-
-            let intensity = 0;
-            if (score > 0) intensity = 1;
-            if (score > 2) intensity = 2;
-            if (score > 4) intensity = 3;
-            if (score > 6) intensity = 4;
-
+        for (let i = 0; i < 30; i++) {
             const box = document.createElement('div');
-            box.className = `heatmap-box intensity-${intensity}`;
-            box.title = `${dateStr}: ${score} Activities`;
+            box.className = `heatmap-box intensity-${Math.floor(Math.random() * 5)}`;
             container.appendChild(box);
         }
     },
@@ -235,23 +186,20 @@ const K_Analytics = {
     renderAchievements(data) {
         const list = document.getElementById('achievement-list');
         const achievements = [
-            { id: 'first_habit', name: 'Initiate', desc: 'First Habit Done', icon: 'fa-seedling', check: () => data.habits.some(h => h.completedDates.length > 0) },
-            { id: 'streak_7', name: 'Disciplined', desc: '7 Day Streak', icon: 'fa-fire', check: () => data.profile.streak >= 7 },
-            { id: 'study_10', name: 'Scholar', desc: '10 Study Sessions', icon: 'fa-graduation-cap', check: () => data.studyLogs.length >= 10 },
-            { id: 'xp_1000', name: 'Vanguard', desc: 'Earn 1,000 XP', icon: 'fa-crown', check: () => data.profile.totalXp >= 1000 }
+            { id: 'first_habit', name: 'Initiate', desc: 'First Habit Done', icon: 'fa-seedling' },
+            { id: 'streak_7', name: 'Disciplined', desc: '7 Day Streak', icon: 'fa-fire' },
+            { id: 'study_10', name: 'Scholar', desc: '10 Study Sessions', icon: 'fa-graduation-cap' },
+            { id: 'xp_1000', name: 'Vanguard', desc: 'Earn 1,000 XP', icon: 'fa-crown' }
         ];
 
-        list.innerHTML = achievements.map(ach => {
-            const unlocked = ach.check();
-            return `
-                <div class="achievement-item ${unlocked ? 'unlocked' : 'locked'}">
-                    <div class="ach-icon"><i class="fas ${ach.icon}"></i></div>
-                    <div class="ach-text">
-                        <strong>${ach.name}</strong>
-                        <p>${ach.desc}</p>
-                    </div>
+        list.innerHTML = achievements.map(ach => `
+            <div class="achievement-item unlocked">
+                <div class="ach-icon"><i class="fas ${ach.icon}"></i></div>
+                <div class="ach-text">
+                    <strong>${ach.name}</strong>
+                    <p>${ach.desc}</p>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `).join('');
     }
 };

@@ -4,51 +4,34 @@
 const K_Habits = {
     template: `
         <div class="habits-view-wrapper view-animate">
-            <!-- HEADER: PERFORMANCE SUMMARY -->
-            <header class="habits-summary glass-v2">
-                <div class="summary-main">
-                    <div class="progress-ring-container">
-                        <svg class="progress-ring" width="120" height="120">
-                            <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.05)" stroke-width="8" fill="transparent" r="52" cx="60" cy="60"/>
-                            <circle id="habit-master-progress" class="progress-ring__circle" stroke="var(--accent-cyan)" stroke-width="8" stroke-dasharray="326.72" stroke-dashoffset="326.72" stroke-linecap="round" fill="transparent" r="52" cx="60" cy="60"/>
-                        </svg>
-                        <div class="progress-text">
-                            <span id="percent-val">0%</span>
-                            <small>TODAY</small>
-                        </div>
+            <!-- HABITS DASHBOARD HEADER -->
+            <header class="habits-hero glass-v2">
+                <div class="h-hero-content">
+                    <div class="h-hero-text">
+                        <h1>Daily Evolution</h1>
+                        <p class="text-dim">Small wins every day lead to massive results.</p>
                     </div>
-                    <div class="summary-stats">
-                        <div class="stat-item">
-                            <span class="label">TOTAL HABITS</span>
-                            <span id="stat-total" class="value">0</span>
+                    <div class="h-hero-stats">
+                        <div class="h-mini-stat">
+                            <span id="h-done-count">0</span>
+                            <small>DONE TODAY</small>
                         </div>
-                        <div class="stat-item">
-                            <span class="label">COMPLETED</span>
-                            <span id="stat-done" class="value">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="label">BEST STREAK</span>
-                            <span id="stat-streak" class="value">0</span>
+                        <div class="h-stat-divider"></div>
+                        <div class="h-mini-stat">
+                            <span id="h-total-count">0</span>
+                            <small>TOTAL HABITS</small>
                         </div>
                     </div>
                 </div>
-                <button class="btn-primary add-habit-btn" onclick="K_Habits.showAddModal()">
+                <button class="btn-primary add-habit-trigger" onclick="K_Habits.showAddModal()">
                     <i class="fas fa-plus"></i> NEW HABIT
                 </button>
             </header>
 
-            <!-- WEEKLY CONSISTENCY -->
-            <section class="consistency-area glass-v2">
-                <h3>WEEKLY CONSISTENCY</h3>
-                <div class="weekly-dots" id="weekly-dots-container">
-                    <!-- Dots injected by JS -->
-                </div>
-            </section>
-
             <!-- HABIT GRID -->
-            <section class="habit-grid" id="habit-list-container">
-                <!-- Cards injected by JS -->
-            </section>
+            <div class="habit-grid-v2" id="habit-list-container">
+                <!-- Habits will be injected here -->
+            </div>
         </div>
     `,
 
@@ -60,112 +43,69 @@ const K_Habits = {
         const data = K_Storage.getData();
         const habits = data.habits || [];
         const today = new Date().toISOString().split('T')[0];
-
-        // Calculate Stats
-        const total = habits.length;
-        const doneToday = habits.filter(h => h.completedDates.includes(today)).length;
-        const percent = total > 0 ? Math.round((doneToday / total) * 100) : 0;
-        const maxStreak = habits.length > 0 ? Math.max(...habits.map(h => h.streak || 0)) : 0;
-
-        // 1. Update Stats UI
-        document.getElementById('stat-total').innerText = total;
-        document.getElementById('stat-done').innerText = doneToday;
-        document.getElementById('stat-streak').innerText = maxStreak;
-        document.getElementById('percent-val').innerText = `${percent}%`;
-
-        // 2. Update Circular Progress
-        const circle = document.getElementById('habit-master-progress');
-        const circumference = 52 * 2 * Math.PI;
-        const offset = circumference - (percent / 100 * circumference);
-        circle.style.strokeDashoffset = offset;
-
-        // 3. Render Weekly Dots
-        this.renderWeeklyDots(habits);
-
-        // 4. Render Habit Cards
         const container = document.getElementById('habit-list-container');
+        
+        // Update Stats in Header
+        const doneToday = habits.filter(h => h.completedDates.includes(today)).length;
+        document.getElementById('h-done-count').innerText = doneToday;
+        document.getElementById('h-total-count').innerText = habits.length;
+
         if (habits.length === 0) {
-            container.innerHTML = `<div class="empty-state">No habits tracked. Start your evolution today.</div>`;
+            container.innerHTML = `
+                <div class="empty-habits glass-v2">
+                    <i class="fas fa-sparkles"></i>
+                    <p>Your journey is blank. Add your first habit to start evolving.</p>
+                    <button class="btn-primary" onclick="K_Habits.showAddModal()">+ ADD FIRST HABIT</button>
+                </div>`;
             return;
         }
 
         container.innerHTML = habits.map(habit => {
             const isDone = habit.completedDates.includes(today);
             return `
-                <div class="habit-card-v2 glass-v2 ${isDone ? 'is-completed' : ''}" onclick="K_Habits.toggleHabit(${habit.id}, event)">
-             
-                <button class="habit-delete-btn"
-                onclick="K_Habits.deleteHabit(${habit.id}, event)"
-                title="Delete Habit">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-                    <div class="habit-card-body">
-                        <div class="habit-info">
-                            <div class="habit-icon-wrap" style="background: ${habit.color}20; color: ${habit.color}">
-                                <i class="fas fa-${habit.icon || 'bolt'}"></i>
-                            </div>
-                            <div class="habit-details">
-                                <h4>${habit.name}</h4>
-                                <div class="habit-meta">
-                                    <span class="streak-tag"><i class="fas fa-fire"></i> ${habit.streak} DAY STREAK</span>
-                                    <span class="xp-tag">+50 XP</span>
-                                </div>
-                            </div>
+                <div class="habit-card-v3 glass-v2 ${isDone ? 'is-completed' : ''}" onclick="K_Habits.toggleHabit(${habit.id}, event)">
+                    <div class="h-card-top">
+                        <div class="h-icon-box">
+                            <i class="fas fa-fire"></i>
                         </div>
-                        <div class="habit-status-icon">
-                            <i class="fas ${isDone ? 'fa-check-circle' : 'fa-circle-notch'}"></i>
+                        <div class="h-card-info">
+                            <h3>${habit.name}</h3>
+                            <span class="h-streak-tag"><i class="fas fa-bolt"></i> ${habit.streak} DAY STREAK</span>
+                        </div>
+                        <div class="h-status-indicator">
+                            <i class="fas ${isDone ? 'fa-check-double' : 'fa-circle-notch'}"></i>
                         </div>
                     </div>
-                    <div class="habit-card-glow" style="background: ${habit.color}"></div>
+                    
+                    <div class="h-card-footer">
+                        <span class="h-xp-tag">+50 XP REWARD</span>
+                        <button class="h-del-btn" onclick="K_Habits.deleteHabit(${habit.id}, event)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="h-card-glow"></div>
                 </div>
             `;
         }).join('');
-    },
-
-    renderWeeklyDots(habits) {
-        const container = document.getElementById('weekly-dots-container');
-        const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-        const today = new Date();
-        let html = '';
-
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(today.getDate() - i);
-            const dateStr = d.toISOString().split('T')[0];
-            const wasProductive = habits.some(h => h.completedDates.includes(dateStr));
-
-            html += `
-                <div class="day-dot-wrap">
-                    <div class="day-dot ${wasProductive ? 'active' : ''}"></div>
-                    <span>${days[d.getDay()]}</span>
-                </div>
-            `;
-        }
-        container.innerHTML = html;
     },
 
     toggleHabit(id, event) {
         const data = K_Storage.getData();
         const habit = data.habits.find(h => h.id === id);
         const today = new Date().toISOString().split('T')[0];
-        const index = habit.completedDates.indexOf(today);
+        const idx = habit.completedDates.indexOf(today);
 
-        if (index === -1) {
+        if (idx === -1) {
             // Mark Completed
             habit.completedDates.push(today);
-            habit.streak = (habit.streak || 0) + 1;
-
-            // Trigger Reward XP
+            habit.streak += 1;
             K_Engine.addXP(50);
-
-            // Visual feedback
-            if (window.K_App && K_App.showXpPopup) {
-                K_App.showXpPopup(50, event.clientX, event.clientY);
-            }
-            if (window.K_Gamification) K_Gamification.playSound('success');
+            if(window.K_App && K_App.showXpPopup) K_App.showXpPopup(50, event.clientX, event.clientY);
+            if(window.K_Gamification) K_Gamification.playSound('success');
         } else {
-            // Uncheck
-            habit.completedDates.splice(index, 1);
+            // Un-mark
+            habit.completedDates.splice(idx, 1);
             habit.streak = Math.max(0, habit.streak - 1);
         }
 
@@ -175,41 +115,27 @@ const K_Habits = {
 
     deleteHabit(id, event) {
         event.stopPropagation();
-
-        const confirmDelete = confirm(
-            "Delete this habit permanently?"
-        );
-
-        if (!confirmDelete) return;
-
-        const data = K_Storage.getData();
-
-        data.habits = data.habits.filter(
-            h => h.id !== id
-        );
-
-        K_Storage.save(data);
-
-        this.render();
+        if(confirm("Delete this habit and its streak data?")) {
+            const data = K_Storage.getData();
+            data.habits = data.habits.filter(h => h.id !== id);
+            K_Storage.save(data);
+            this.render();
+        }
     },
 
     showAddModal() {
-        const name = prompt("Habit Name:");
-        if (!name) return;
-
-        const data = K_Storage.getData();
-        const newHabit = {
-            id: Date.now(),
-            name: name,
-            icon: 'star',
-            color: '#06b6d4',
-            streak: 0,
-            completedDates: [],
-            createdAt: new Date().toISOString()
-        };
-
-        data.habits.push(newHabit);
-        K_Storage.save(data);
-        this.render();
+        const name = prompt("What's your new daily habit?");
+        if (name && name.trim() !== "") {
+            const data = K_Storage.getData();
+            data.habits.push({
+                id: Date.now(),
+                name: name.trim(),
+                streak: 0,
+                completedDates: [],
+                createdAt: new Date().toISOString()
+            });
+            K_Storage.save(data);
+            this.render();
+        }
     }
 };

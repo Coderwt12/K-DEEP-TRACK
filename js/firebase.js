@@ -126,3 +126,41 @@ window.saveUserData = async function(data){
     }
 
 }
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        // LocalStorage profile update (Photo sync fix)
+        const data = K_Storage.getData();
+        data.profile.name = user.displayName;
+        data.profile.avatar = user.photoURL; // Photo URL yahan save hoga
+        K_Storage.save(data);
+
+        // Sidebar update
+        const avatarImg = document.querySelector('.sidebar-avatar'); // Agar sidebar mein avatar img hai
+        if(avatarImg) avatarImg.src = user.photoURL;
+
+        console.log("Authenticated:", user.displayName);
+        if (window.K_App) K_App.init(); 
+    } else {
+        console.log("Logged Out");
+    }
+});
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        console.log("Authenticated:", user.displayName);
+        // Sync local profile with firebase
+        const data = K_Storage.getData();
+        data.profile.name = user.displayName;
+        data.profile.avatar = user.photoURL;
+        K_Storage.save(data);
+
+        // Sabse Important: Agar user Settings page par hai toh UI refresh karo
+        if (window.K_App && K_App.currentView === 'settings') {
+            K_Settings.init();
+        }
+        if (window.K_App && K_App.currentView === 'dashboard') {
+            K_Dashboard.init();
+        }
+    } else {
+        console.log("Logged Out");
+    }
+});
