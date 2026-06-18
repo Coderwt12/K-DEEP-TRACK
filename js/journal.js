@@ -1,20 +1,29 @@
 /**
  * K-DEEP XP - PREMIUM JOURNAL SYSTEM
+ * Optimized Production Version
+ * Manages daily reflections, mood tracking, and retrospective growth logs.
  */
 const K_Journal = {
     selectedMood: 'good',
 
+    // UI Template: Preserving original cyberpunk glassmorphism structure
     template: `
         <div class="journal-view-wrapper view-animate">
             <!-- HEADER: JOURNAL INTELLIGENCE -->
             <header class="journal-stats-bar glass-v2">
                 <div class="j-stat">
                     <span class="label">JOURNAL STREAK</span>
-                    <div class="stat-val"><i class="fas fa-fire accent-orange"></i> <span id="j-streak">0</span></div>
+                    <div class="stat-val">
+                        <i class="fas fa-fire accent-orange"></i> 
+                        <span id="j-streak">0</span>
+                    </div>
                 </div>
                 <div class="j-stat">
                     <span class="label">TOTAL ENTRIES</span>
-                    <div class="stat-val"><i class="fas fa-book-open accent-cyan"></i> <span id="j-total">0</span></div>
+                    <div class="stat-val">
+                        <i class="fas fa-book-open accent-cyan"></i> 
+                        <span id="j-total">0</span>
+                    </div>
                 </div>
                 <div class="j-stat">
                     <span class="label">TODAY'S DATE</span>
@@ -29,7 +38,7 @@ const K_Journal = {
                     <div class="mood-btn" data-mood="great" onclick="K_Journal.setMood('great')">
                         <span class="emoji">😄</span> <span class="mood-label">Great</span>
                     </div>
-                    <div class="mood-btn active" data-mood="good" onclick="K_Journal.setMood('good')">
+                    <div class="mood-btn" data-mood="good" onclick="K_Journal.setMood('good')">
                         <span class="emoji">🙂</span> <span class="mood-label">Good</span>
                     </div>
                     <div class="mood-btn" data-mood="average" onclick="K_Journal.setMood('average')">
@@ -77,76 +86,111 @@ const K_Journal = {
         </div>
     `,
 
+    /**
+     * Module Entry Point
+     */
     init() {
-        const today = new Date().toLocaleDateString('en-US', { 
+        const todayLabel = new Date().toLocaleDateString('en-US', { 
             weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' 
         });
-        document.getElementById('j-date').innerText = today;
+        
+        const dateEl = document.getElementById('j-date');
+        if (dateEl) dateEl.innerText = todayLabel;
         
         this.renderStats();
         this.loadTodayEntry();
     },
 
+    /**
+     * Updates header statistics from storage
+     */
     renderStats() {
         const data = K_Storage.getData();
-        document.getElementById('j-total').innerText = data.journal.length;
-        document.getElementById('j-streak').innerText = data.profile.streak; // Using global streak or journal specific if available
+        if (!data) return;
+
+        const totalEl = document.getElementById('j-total');
+        const streakEl = document.getElementById('j-streak');
+
+        if (totalEl) totalEl.innerText = data.journal?.length || 0;
+        if (streakEl) streakEl.innerText = data.profile?.streak || 0;
     },
 
+    /**
+     * UI Handler for mindset/mood selection
+     * @param {string} mood - key (great, good, average, bad)
+     */
     setMood(mood) {
         this.selectedMood = mood;
-        document.querySelectorAll('.mood-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if(btn.dataset.mood === mood) btn.classList.add('active');
+        const buttons = document.querySelectorAll('.mood-btn');
+        
+        buttons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mood === mood);
         });
     },
 
+    /**
+     * Populates fields if an entry exists for the current calendar date
+     */
     loadTodayEntry() {
         const data = K_Storage.getData();
-        const today = new Date().toISOString().split('T')[0];
-        const entry = data.journal.find(j => j.date === today);
+        const todayKey = new Date().toISOString().split('T')[0];
+        const entry = data.journal?.find(j => j.date === todayKey);
 
         if (entry) {
             this.setMood(entry.mood || 'good');
-            document.getElementById('j-win').value = entry.win || '';
-            document.getElementById('j-study').value = entry.study || '';
-            document.getElementById('j-mistake').value = entry.mistake || '';
-            document.getElementById('j-lesson').value = entry.lesson || '';
-            document.getElementById('j-target').value = entry.target || '';
-            document.getElementById('j-gratitude').value = entry.gratitude || '';
+            
+            // Internal mapping for field population
+            const fields = ['win', 'study', 'mistake', 'lesson', 'target', 'gratitude'];
+            fields.forEach(field => {
+                const el = document.getElementById(`j-${field}`);
+                if (el) el.value = entry[field] || '';
+            });
+        } else {
+            this.setMood('good'); // Reset UI to default for new entry
         }
     },
 
+    /**
+     * Persists entry to storage and calculates XP rewards
+     */
     saveEntry() {
-        const today = new Date().toISOString().split('T')[0];
+        const todayKey = new Date().toISOString().split('T')[0];
+        
+        // Helper to get element values safely
+        const getVal = (id) => document.getElementById(id)?.value || '';
+
         const entry = {
-            date: today,
+            date: todayKey,
             mood: this.selectedMood,
-            win: document.getElementById('j-win').value,
-            study: document.getElementById('j-study').value,
-            mistake: document.getElementById('j-mistake').value,
-            lesson: document.getElementById('j-lesson').value,
-            target: document.getElementById('j-target').value,
-            gratitude: document.getElementById('j-gratitude').value,
+            win: getVal('j-win'),
+            study: getVal('j-study'),
+            mistake: getVal('j-mistake'),
+            lesson: getVal('j-lesson'),
+            target: getVal('j-target'),
+            gratitude: getVal('j-gratitude'),
             timestamp: new Date().toISOString()
         };
 
         const data = K_Storage.getData();
-        const existingIndex = data.journal.findIndex(j => j.date === today);
+        const existingIndex = data.journal.findIndex(j => j.date === todayKey);
 
         if (existingIndex > -1) {
-            // Update existing
-            data.journal[existingIndex] = entry;
-            alert("Journal Updated!");
+            // Update mode
+            data.journal[existingIndex] = { ...data.journal[existingIndex], ...entry };
+            alert("Journal Intelligence Updated.");
         } else {
-            // Create new entry & Reward XP
+            // Create mode & Reward XP
             data.journal.push(entry);
-            K_Engine.addXP(20); // Reward 20 XP for first entry
             
-            if(window.K_App && K_App.showXpPopup) {
-                K_App.showXpPopup(20, window.innerWidth/2, window.innerHeight/2);
+            if (typeof K_Engine !== "undefined") {
+                K_Engine.addXP(20);
             }
-            alert("Entry Saved! +20 XP Earned.");
+            
+            if (window.K_App && typeof K_App.showXpPopup === "function") {
+                K_App.showXpPopup(20, window.innerWidth / 2, window.innerHeight / 2);
+            }
+            
+            alert("Neural Reflection Synced! +20 XP Earned.");
         }
 
         K_Storage.save(data);

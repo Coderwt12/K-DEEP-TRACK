@@ -1,12 +1,13 @@
 /**
  * K-DEEP XP - PREMIUM STUDY ZONE (FOCUS OS)
+ * Optimized Production Version
+ * Handles Pomodoro timers, subject tracking, and focus session logging.
  */
 const K_Study = {
     timerInterval: null,
     timeLeft: 1500, // Default 25 mins
     isRunning: false,
     currentSubject: 'Physics',
-    sessionStartTime: null,
     totalSecondsElapsed: 0,
 
     template: `
@@ -73,59 +74,88 @@ const K_Study = {
         </div>
     `,
 
+    /**
+     * Initializes the Study module
+     */
     init() {
         this.renderStats();
         this.updateTimerDisplay();
     },
 
+    /**
+     * Sets the active subject for the session
+     */
     setSubject(sub, el) {
         this.currentSubject = sub;
-        document.querySelectorAll('.sub-pill').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
+        const pills = document.querySelectorAll('.sub-pill');
+        pills.forEach(b => b.classList.remove('active'));
+        if (el) el.classList.add('active');
     },
 
+    /**
+     * Sets the timer duration based on focus mode
+     */
     setMode(mode) {
-        if(this.isRunning) return;
-        if(mode === 'pomodoro') this.timeLeft = 25 * 60;
-        if(mode === 'deepwork') this.timeLeft = 50 * 60;
-        if(mode === 'marathon') this.timeLeft = 90 * 60;
+        if (this.isRunning) return;
+        
+        const modes = {
+            'pomodoro': 25 * 60,
+            'deepwork': 50 * 60,
+            'marathon': 90 * 60
+        };
+
+        this.timeLeft = modes[mode] || 1500;
         this.updateTimerDisplay();
     },
 
+    /**
+     * Handles Start/Pause logic
+     */
     toggleTimer() {
         const btn = document.getElementById('btn-start');
         const stopBtn = document.getElementById('btn-stop');
+        const statusLabel = document.getElementById('timer-status');
 
         if (this.isRunning) {
-            // PAUSE
+            // PAUSE SESSION
             clearInterval(this.timerInterval);
             this.isRunning = false;
-            btn.innerHTML = `<i class="fas fa-play"></i> RESUME`;
-            document.getElementById('timer-status').innerText = "PAUSED";
+            if (btn) btn.innerHTML = `<i class="fas fa-play"></i> RESUME`;
+            if (statusLabel) statusLabel.innerText = "PAUSED";
         } else {
-            // START
+            // START/RESUME SESSION
             this.isRunning = true;
-            this.sessionStartTime = new Date();
-            btn.innerHTML = `<i class="fas fa-pause"></i> PAUSE`;
-            stopBtn.classList.remove('hidden');
-            document.getElementById('timer-status').innerText = `FOCUSING ON ${this.currentSubject.toUpperCase()}`;
+            if (btn) btn.innerHTML = `<i class="fas fa-pause"></i> PAUSE`;
+            if (stopBtn) stopBtn.classList.remove('hidden');
+            if (statusLabel) statusLabel.innerText = `FOCUSING ON ${this.currentSubject.toUpperCase()}`;
             
             this.timerInterval = setInterval(() => {
-                this.timeLeft--;
-                this.totalSecondsElapsed++;
-                this.updateTimerDisplay();
-                if (this.timeLeft <= 0) this.stopTimer();
+                if (this.timeLeft > 0) {
+                    this.timeLeft--;
+                    this.totalSecondsElapsed++;
+                    this.updateTimerDisplay();
+                } else {
+                    this.stopTimer();
+                }
             }, 1000);
         }
     },
 
+    /**
+     * Updates the clock UI (MM:SS)
+     */
     updateTimerDisplay() {
+        const timerEl = document.getElementById('main-timer');
+        if (!timerEl) return;
+
         const mins = Math.floor(this.timeLeft / 60);
         const secs = this.timeLeft % 60;
-        document.getElementById('main-timer').innerText = 
-            `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        timerEl.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     },
 
+    /**
+     * Ends the session, calculates XP, and resets state
+     */
     stopTimer() {
         clearInterval(this.timerInterval);
         const minutesStudied = Math.floor(this.totalSecondsElapsed / 60);
@@ -134,17 +164,27 @@ const K_Study = {
             this.saveSession(minutesStudied);
         }
 
-        // Reset UI
+        // Reset Logic State
         this.isRunning = false;
         this.totalSecondsElapsed = 0;
-        this.timeLeft = 1500;
-        document.getElementById('btn-start').innerHTML = `<i class="fas fa-play"></i> START SESSION`;
-        document.getElementById('btn-stop').classList.add('hidden');
-        document.getElementById('timer-status').innerText = "SESSION COMPLETE";
+        this.timeLeft = 1500; // Reset to default
+
+        // UI Updates
+        const btn = document.getElementById('btn-start');
+        const stopBtn = document.getElementById('btn-stop');
+        const statusLabel = document.getElementById('timer-status');
+
+        if (btn) btn.innerHTML = `<i class="fas fa-play"></i> START SESSION`;
+        if (stopBtn) stopBtn.classList.add('hidden');
+        if (statusLabel) statusLabel.innerText = minutesStudied > 0 ? "SESSION COMPLETE" : "READY TO FOCUS";
+        
         this.updateTimerDisplay();
         this.renderStats();
     },
 
+    /**
+     * Persists focus data to storage and rewards user
+     */
     saveSession(mins) {
         const xpEarned = mins * 2; // 2 XP per minute
         const data = K_Storage.getData();
@@ -157,33 +197,44 @@ const K_Study = {
             timestamp: new Date().toISOString()
         };
 
-        data.studyLogs.push(newLog);
-        K_Storage.save(data);
+        if (data.studyLogs) {
+            data.studyLogs.push(newLog);
+            K_Storage.save(data);
+        }
         
-        // XP Reward Logic
-        if(window.K_Engine) K_Engine.addXP(xpEarned);
+        // Reward Engine Integration
+        if (typeof K_Engine !== "undefined") {
+            K_Engine.addXP(xpEarned);
+        }
         
-        // Popup
-        if(window.K_App && K_App.showXpPopup) {
-            K_App.showXpPopup(xpEarned, window.innerWidth/2, window.innerHeight/2);
+        // UI Feedback
+        if (window.K_App && typeof K_App.showXpPopup === "function") {
+            K_App.showXpPopup(xpEarned, window.innerWidth / 2, window.innerHeight / 2);
         }
         
         alert(`Great Work! You studied ${this.currentSubject} for ${mins} mins and earned ${xpEarned} XP.`);
     },
 
+    /**
+     * Renders numeric stats in the top header
+     */
     renderStats() {
         const data = K_Storage.getData();
+        if (!data) return;
+
         const logs = data.studyLogs || [];
         const today = new Date().toISOString().split('T')[0];
         
-        const todayLogs = logs.filter(l => l.timestamp.split('T')[0] === today);
-        const todayMins = todayLogs.reduce((acc, curr) => acc + curr.duration, 0);
-        const totalXP = logs.reduce((acc, curr) => acc + curr.xpEarned, 0);
+        const todayLogs = logs.filter(l => l.timestamp && l.timestamp.split('T')[0] === today);
+        const todayMins = todayLogs.reduce((acc, curr) => acc + (curr.duration || 0), 0);
+        const totalXP = logs.reduce((acc, curr) => acc + (curr.xpEarned || 0), 0);
         
-        document.getElementById('stat-today-time').innerText = `${Math.floor(todayMins/60)}h ${todayMins%60}m`;
-        document.getElementById('stat-total-sessions').innerText = logs.length;
-        document.getElementById('stat-study-xp').innerText = totalXP;
+        const timeEl = document.getElementById('stat-today-time');
+        const sessEl = document.getElementById('stat-total-sessions');
+        const xpEl = document.getElementById('stat-study-xp');
 
-        
+        if (timeEl) timeEl.innerText = `${Math.floor(todayMins / 60)}h ${todayMins % 60}m`;
+        if (sessEl) sessEl.innerText = logs.length;
+        if (xpEl) xpEl.innerText = totalXP;
     }
 };

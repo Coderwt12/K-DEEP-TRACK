@@ -1,7 +1,14 @@
+/**
+ * K-DEEP XP - DASHBOARD MODULE
+ * Optimized Production Version
+ * Handles real-time stat rendering and weekly activity visualization.
+ */
+
 const K_Dashboard = {
+    // UI Template preserved with original structure and cyberpunk styling
     template: `
     <div class="os-container view-animate">
-        <!-- HERO -->
+        <!-- HERO COMMAND CENTER -->
         <section class="hero-command glass-v2 tilt-card">
             <div class="hero-content">
                 <div class="welcome-text">
@@ -23,7 +30,7 @@ const K_Dashboard = {
             </div>
         </section>
 
-        <!-- METRICS -->
+        <!-- CORE METRICS HUB -->
         <section class="metric-hub">
             <div class="os-card glass-v2 tilt-card evolution-card">
                 <div class="card-label">EVOLUTION PHASE</div>
@@ -62,7 +69,7 @@ const K_Dashboard = {
             </div>
         </section>
 
-        <!-- WEEKLY + BADGES -->
+        <!-- ANALYTICS & ACHIEVEMENTS GRID -->
         <section class="data-grid">
             <div class="os-card glass-v2 tilt-card chart-section">
                 <div class="section-header">
@@ -80,62 +87,102 @@ const K_Dashboard = {
         </section>
     </div>`,
 
+    /**
+     * Entry point for the dashboard module
+     */
     init() {
         this.renderStats();
         this.renderWeeklyChart();
     },
 
+    /**
+     * Renders numeric stats, welcome message, and badges
+     */
     renderStats() {
         const data = K_Storage.getData();
+        if (!data) return;
+
         const today = new Date().toISOString().split('T')[0];
+        const { profile, studyLogs, habits } = data;
 
-        document.getElementById("hero-welcome").innerText = `WELCOME, ${data.profile.name.toUpperCase()}`;
+        // 1. Welcome & Basic Identity
+        const welcomeEl = document.getElementById("hero-welcome");
+        if (welcomeEl) welcomeEl.innerText = `WELCOME, ${profile.name.toUpperCase()}`;
 
-        const xpProgress = K_Engine.getXpProgress(data.profile.totalXp);
-        document.getElementById("dash-level").innerText = data.profile.level.toString().padStart(2, "0");
-        document.getElementById("dash-xp-current").innerText = Math.floor(xpProgress.currentLevelXp);
-        document.getElementById("dash-xp-needed").innerText = `${xpProgress.neededXp} XP`;
-        document.getElementById("dash-xp-bar").style.width = `${xpProgress.percentage}%`;
-        document.getElementById("dash-streak").innerText = data.profile.streak;
+        // 2. XP & Leveling Logic
+        const xpProgress = K_Engine.getXpProgress(profile.totalXp);
+        const levelEl = document.getElementById("dash-level");
+        const xpCurrEl = document.getElementById("dash-xp-current");
+        const xpNeedEl = document.getElementById("dash-xp-needed");
+        const xpBarEl = document.getElementById("dash-xp-bar");
 
-        const mins = data.studyLogs
+        if (levelEl) levelEl.innerText = profile.level.toString().padStart(2, "0");
+        if (xpCurrEl) xpCurrEl.innerText = Math.floor(xpProgress.currentLevelXp);
+        if (xpNeedEl) xpNeedEl.innerText = `${xpProgress.neededXp} XP`;
+        if (xpBarEl) xpBarEl.style.width = `${xpProgress.percentage}%`;
+
+        // 3. Streak
+        const streakEl = document.getElementById("dash-streak");
+        if (streakEl) streakEl.innerText = profile.streak;
+
+        // 4. Focus Time Logic (Today's Total)
+        const mins = studyLogs
             .filter(log => log.timestamp.split("T")[0] === today)
-            .reduce((a, b) => a + b.duration, 0);
+            .reduce((total, log) => total + log.duration, 0);
 
-        document.getElementById("dash-study").innerText = `${Math.floor(mins / 60)}h ${mins % 60}m`;
+        const studyEl = document.getElementById("dash-study");
+        if (studyEl) studyEl.innerText = `${Math.floor(mins / 60)}h ${mins % 60}m`;
 
+        // 5. Daily Mission Logic (Habit Completion)
+        const totalHabits = habits.length;
+        const doneToday = habits.filter(h => h.completedDates.includes(today)).length;
+        const missionPercent = totalHabits > 0 ? Math.round((doneToday / totalHabits) * 100) : 0;
+        
+        const missionPercEl = document.getElementById("mission-percent");
+        const missionBarEl = document.getElementById("mission-bar-fill");
+        if (missionPercEl) missionPercEl.innerText = `${missionPercent}%`;
+        if (missionBarEl) missionBarEl.style.width = `${missionPercent}%`;
+
+        // 6. Badges (Show last 4 recent)
         const badgeContainer = document.getElementById("dash-badges");
-        if (data.profile.badges.length === 0) {
-            badgeContainer.innerHTML = `<p class="text-dim">No badges unlocked.</p>`;
-        } else {
-            badgeContainer.innerHTML = data.profile.badges.slice(-4).map(id => {
-                const badge = K_Gamification.badges.find(b => b.id === id);
-                return `<div class="mini-badge-item" title="${badge.name}"><i class="fas ${badge.icon}" style="color:${badge.color}"></i></div>`;
-            }).join("");
+        if (badgeContainer) {
+            if (profile.badges.length === 0) {
+                badgeContainer.innerHTML = `<p class="text-dim">No badges unlocked.</p>`;
+            } else {
+                badgeContainer.innerHTML = profile.badges.slice(-4).map(id => {
+                    const badge = K_Gamification.badges.find(b => b.id === id);
+                    return badge ? `<div class="mini-badge-item" title="${badge.name}"><i class="fas ${badge.icon}" style="color:${badge.color}"></i></div>` : "";
+                }).join("");
+            }
         }
     },
 
+    /**
+     * Renders the bar chart for the current week's study activity
+     */
     renderWeeklyChart() {
         const data = K_Storage.getData();
         const chart = document.getElementById("weekly-xp-chart");
-        if (!chart) return;
+        if (!chart || !data) return;
 
-        const durations = [0, 0, 0, 0, 0, 0, 0];
+        const durations = [0, 0, 0, 0, 0, 0, 0]; // Mon to Sun
         const labels = ["M", "T", "W", "T", "F", "S", "S"];
-        const today = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+        const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 
+        // Populate durations from logs
         data.studyLogs.forEach(log => {
             const d = new Date(log.timestamp);
-            let day = d.getDay() === 0 ? 6 : d.getDay() - 1;
+            const day = d.getDay() === 0 ? 6 : d.getDay() - 1;
             durations[day] += log.duration;
         });
 
         const max = Math.max(...durations, 1);
+        
         chart.innerHTML = durations.map((dur, i) => {
             const height = dur === 0 ? 10 : (dur / max) * 100;
             return `
                 <div class="chart-column">
-                    <div class="bar ${i === today ? "active" : ""}" style="height:${height}%"></div>
+                    <div class="bar ${i === todayIdx ? "active" : ""}" style="height:${height}%"></div>
                     <span>${labels[i]}</span>
                 </div>`;
         }).join("");

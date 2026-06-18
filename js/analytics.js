@@ -1,12 +1,14 @@
 /**
- * K-DEEP XP - ANALYTICS ENGINE (ORIGINAL V1)
+ * K-DEEP XP - PREMIUM ANALYTICS ENGINE
+ * Optimized Production Version
+ * Handles data visualization, Chart.js lifecycle management, and productivity metrics.
  */
 const K_Analytics = {
-    charts: {}, 
+    charts: {}, // Registry to store chart instances and prevent memory leaks
 
     template: `
         <div class="analytics-view-wrapper view-animate">
-            <!-- OVERVIEW CARDS -->
+            <!-- SECTION A: OVERVIEW CARDS -->
             <div class="overview-grid">
                 <div class="analytics-card glass-v2">
                     <i class="fas fa-bolt accent"></i>
@@ -38,7 +40,7 @@ const K_Analytics = {
                 </div>
             </div>
 
-            <!-- WEEKLY & SUBJECT CHARTS -->
+            <!-- SECTION B & C: MAIN CHARTS -->
             <div class="charts-main-grid">
                 <div class="chart-container glass-v2">
                     <h3><i class="fas fa-chart-line"></i> WEEKLY XP GROWTH</h3>
@@ -50,7 +52,7 @@ const K_Analytics = {
                 </div>
             </div>
 
-            <!-- HABIT DOUGHNUT & HEATMAP -->
+            <!-- SECTION D & E: HABITS & HEATMAP -->
             <div class="charts-secondary-grid">
                 <div class="chart-container glass-v2 doughnut-wrap">
                     <h3><i class="fas fa-pie-chart"></i> HABIT CONSISTENCY</h3>
@@ -62,7 +64,7 @@ const K_Analytics = {
                 </div>
             </div>
 
-            <!-- ACHIEVEMENT PANEL -->
+            <!-- SECTION F: ACHIEVEMENT PANEL -->
             <div class="achievement-panel glass-v2">
                 <h3><i class="fas fa-trophy"></i> MILESTONES</h3>
                 <div class="achievement-grid" id="achievement-list"></div>
@@ -70,48 +72,93 @@ const K_Analytics = {
         </div>
     `,
 
+    /**
+     * Initializes all analytics components
+     */
     init() {
         const data = K_Storage.getData();
+        if (!data) return;
+
+        // Render numeric stats and achievements
         this.renderStats(data);
-        
-        // Initialize Charts
-        setTimeout(() => {
-            this.initWeeklyXPChart(data);
-            this.initSubjectChart(data);
-            this.initHabitChart(data);
-            this.renderHeatmap(data);
-            this.renderAchievements(data);
-        }, 100);
+        this.renderAchievements(data);
+
+        // Standardize 7-day data range for chart consistency
+        const last7Days = this._getDateRange(7);
+
+        // Initialize visualization components
+        this.initWeeklyXPChart(data, last7Days);
+        this.initSubjectChart(data);
+        this.initHabitChart(data);
+        this.renderHeatmap(data);
     },
 
+    /**
+     * Utility: Generates an array of last N days for data alignment
+     */
+    _getDateRange(daysCount) {
+        const days = [];
+        const today = new Date();
+        for (let i = daysCount - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            days.push({
+                dateStr: d.toISOString().split('T')[0],
+                label: d.toLocaleDateString('en-US', { weekday: 'short' })
+            });
+        }
+        return days;
+    },
+
+    /**
+     * Updates header statistic cards
+     */
     renderStats(data) {
-        const totalStudyMins = data.studyLogs.reduce((acc, log) => acc + log.duration, 0);
-        const totalHabitsCompleted = data.habits.reduce((acc, habit) => acc + habit.completedDates.length, 0);
+        const totalStudyMins = (data.studyLogs || []).reduce((acc, log) => acc + (log.duration || 0), 0);
+        const totalHabitsDone = (data.habits || []).reduce((acc, habit) => acc + (habit.completedDates?.length || 0), 0);
 
-        document.getElementById('total-xp-stat').innerText = data.profile.totalXp.toLocaleString();
-        document.getElementById('total-study-stat').innerText = `${Math.floor(totalStudyMins / 60)}h`;
-        document.getElementById('total-habits-stat').innerText = totalHabitsCompleted;
-        document.getElementById('current-streak-stat').innerText = data.profile.streak;
+        const elements = {
+            'total-xp-stat': (data.profile?.totalXp || 0).toLocaleString(),
+            'total-study-stat': `${Math.floor(totalStudyMins / 60)}h`,
+            'total-habits-stat': totalHabitsDone,
+            'current-streak-stat': data.profile?.streak || 0
+        };
+
+        Object.entries(elements).forEach(([id, val]) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        });
     },
 
-    initWeeklyXPChart(data) {
-        const ctx = document.getElementById('weeklyXpChart').getContext('2d');
-        if (this.charts.xp) this.charts.xp.destroy();
+    /**
+     * LINE CHART: Visualizes daily XP gains
+     */
+    initWeeklyXPChart(data, days) {
+        const labels = days.map(d => d.label);
+        const xpData = days.map(day => {
+            const studyXp = (data.studyLogs || [])
+                .filter(l => l.timestamp?.startsWith(day.dateStr))
+                .reduce((acc, curr) => acc + (curr.xpEarned || 0), 0);
+            
+            const habitXp = (data.habits || [])
+                .filter(h => h.completedDates?.includes(day.dateStr)).length * 50;
 
-        const labels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-        const xpData = [100, 200, 150, 300, 250, 400, 350]; // Sample data for V1
+            return studyXp + habitXp;
+        });
 
-        this.charts.xp = new Chart(ctx, {
+        this._renderChart('weeklyXpChart', {
             type: 'line',
             data: {
-                labels: labels,
+                labels,
                 datasets: [{
                     label: 'XP Earned',
                     data: xpData,
                     borderColor: '#06b6d4',
                     backgroundColor: 'rgba(6, 182, 212, 0.1)',
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#06b6d4'
                 }]
             },
             options: {
@@ -126,14 +173,19 @@ const K_Analytics = {
         });
     },
 
+    /**
+     * BAR CHART: Subject study distribution
+     */
     initSubjectChart(data) {
-        const ctx = document.getElementById('subjectChart').getContext('2d');
-        if (this.charts.subject) this.charts.subject.destroy();
-
         const subjects = ['Physics', 'Chemistry', 'Maths', 'English'];
-        const hours = [5, 3, 8, 4]; // Sample data for V1
+        const hours = subjects.map(sub => {
+            const mins = (data.studyLogs || [])
+                .filter(l => l.subject === sub)
+                .reduce((acc, curr) => acc + (curr.duration || 0), 0);
+            return (mins / 60).toFixed(1);
+        });
 
-        this.charts.subject = new Chart(ctx, {
+        this._renderChart('subjectChart', {
             type: 'bar',
             data: {
                 labels: subjects,
@@ -146,21 +198,30 @@ const K_Analytics = {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } }
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false } }
+                }
             }
         });
     },
 
+    /**
+     * DOUGHNUT CHART: Daily habit completion ratio
+     */
     initHabitChart(data) {
-        const ctx = document.getElementById('habitDoughnutChart').getContext('2d');
-        if (this.charts.habit) this.charts.habit.destroy();
+        const today = new Date().toISOString().split('T')[0];
+        const habits = data.habits || [];
+        const completed = habits.filter(h => h.completedDates?.includes(today)).length;
+        const missed = Math.max(0, habits.length - completed);
 
-        this.charts.habit = new Chart(ctx, {
+        this._renderChart('habitDoughnutChart', {
             type: 'doughnut',
             data: {
-                labels: ['Completed', 'Missed'],
+                labels: ['Completed', 'Pending'],
                 datasets: [{
-                    data: [70, 30],
+                    data: [completed, missed],
                     backgroundColor: ['#10b981', 'rgba(255,255,255,0.05)'],
                     borderWidth: 0
                 }]
@@ -168,38 +229,77 @@ const K_Analytics = {
             options: {
                 responsive: true,
                 cutout: '80%',
-                plugins: { legend: { position: 'bottom' } }
+                plugins: { legend: { position: 'bottom', labels: { color: '#a1a1aa' } } }
             }
         });
     },
 
+    /**
+     * Renders activity heatmap for the last 30 days
+     */
     renderHeatmap(data) {
         const container = document.getElementById('heatmap-container');
-        container.innerHTML = '';
-        for (let i = 0; i < 30; i++) {
-            const box = document.createElement('div');
-            box.className = `heatmap-box intensity-${Math.floor(Math.random() * 5)}`;
-            container.appendChild(box);
-        }
+        if (!container) return;
+
+        const days = this._getDateRange(30);
+        let html = '';
+
+        days.forEach(day => {
+            const studyCount = (data.studyLogs || []).filter(l => l.timestamp?.startsWith(day.dateStr)).length;
+            const habitCount = (data.habits || []).filter(h => h.completedDates?.includes(day.dateStr)).length;
+            const score = studyCount + habitCount;
+
+            let intensity = 0;
+            if (score > 6) intensity = 4;
+            else if (score > 4) intensity = 3;
+            else if (score > 2) intensity = 2;
+            else if (score > 0) intensity = 1;
+
+            html += `<div class="heatmap-box intensity-${intensity}" title="${day.dateStr}: ${score} Activities"></div>`;
+        });
+
+        container.innerHTML = html;
     },
 
+    /**
+     * Renders achievements based on current profile metrics
+     */
     renderAchievements(data) {
         const list = document.getElementById('achievement-list');
-        const achievements = [
-            { id: 'first_habit', name: 'Initiate', desc: 'First Habit Done', icon: 'fa-seedling' },
-            { id: 'streak_7', name: 'Disciplined', desc: '7 Day Streak', icon: 'fa-fire' },
-            { id: 'study_10', name: 'Scholar', desc: '10 Study Sessions', icon: 'fa-graduation-cap' },
-            { id: 'xp_1000', name: 'Vanguard', desc: 'Earn 1,000 XP', icon: 'fa-crown' }
+        if (!list) return;
+
+        const milestones = [
+            { id: 'first_habit', name: 'Initiate', desc: 'First Habit Done', icon: 'fa-seedling', check: () => (data.habits || []).some(h => h.completedDates?.length > 0) },
+            { id: 'streak_7', name: 'Disciplined', desc: '7 Day Streak', icon: 'fa-fire', check: () => (data.profile?.streak || 0) >= 7 },
+            { id: 'study_10', name: 'Scholar', desc: '10 Study Sessions', icon: 'fa-graduation-cap', check: () => (data.studyLogs || []).length >= 10 },
+            { id: 'xp_1000', name: 'Vanguard', desc: 'Earn 1,000 XP', icon: 'fa-crown', check: () => (data.profile?.totalXp || 0) >= 1000 }
         ];
 
-        list.innerHTML = achievements.map(ach => `
-            <div class="achievement-item unlocked">
-                <div class="ach-icon"><i class="fas ${ach.icon}"></i></div>
-                <div class="ach-text">
-                    <strong>${ach.name}</strong>
-                    <p>${ach.desc}</p>
+        list.innerHTML = milestones.map(ach => {
+            const unlocked = ach.check();
+            return `
+                <div class="achievement-item ${unlocked ? 'unlocked' : 'locked'}">
+                    <div class="ach-icon"><i class="fas ${ach.icon}"></i></div>
+                    <div class="ach-text">
+                        <strong>${ach.name}</strong>
+                        <p>${ach.desc}</p>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
+    },
+
+    /**
+     * Utility: Standardized Chart creation with automatic destruction
+     */
+    _renderChart(canvasId, config) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        // Prevent memory leaks: Destroy previous instance before creating a new one
+        if (this.charts[canvasId]) {
+            this.charts[canvasId].destroy();
+        }
+        this.charts[canvasId] = new Chart(ctx, config);
     }
 };

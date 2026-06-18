@@ -1,36 +1,89 @@
-/* ==========================
-   MOBILE & TABLET FIXES
-========================== */
+/**
+ * K-DEEP XP - RESPONSIVE ENGINE
+ * Optimized Production Version
+ * Handles layout transitions for Tablet and Mobile devices.
+ */
 
+/* ============================================================
+   1. TABLET LANDSCAPE & SMALL LAPTOPS (<= 1024px)
+   ============================================================ */
 @media (max-width: 1024px) {
-    :root { --sidebar-width: 80px; }
-    .sidebar { width: 80px; padding: 2rem 0.5rem; }
-    .nav-item span, .version-tag, .sidebar-logo { display: none; }
-    .nav-item { justify-content: center; padding: 1.2rem; }
-    .logo-area { display: flex; justify-content: center; }
-    .main-content { margin-left: 80px; }
+    :root { 
+        --sidebar-width: 80px; 
+    }
+
+    .sidebar { 
+        width: var(--sidebar-width); 
+        padding: 2rem 0.5rem; 
+    }
+
+    /* Hide text elements to save space, keeping icons only */
+    .nav-item span, 
+    .version-tag, 
+    .sidebar-logo, 
+    .logo-text { 
+        display: none !important; 
+    }
+
+    .logo-area { 
+        display: flex; 
+        justify-content: center; 
+    }
+
+    .nav-item { 
+        justify-content: center; 
+        padding: 1.2rem; 
+    }
+
+    .main-content { 
+        margin-left: var(--sidebar-width); 
+    }
+
+    /* Grid Adjustments for Tablet */
+    .metric-hub { 
+        grid-template-columns: 1fr 1fr; 
+    }
+
+    .evolution-card { 
+        grid-column: span 2; 
+    }
+
+    .data-grid { 
+        grid-template-columns: 1fr; 
+    }
 }
 
+/* ============================================================
+   2. MOBILE DEVICES (<= 768px)
+   ============================================================ */
 @media (max-width: 768px) {
-    :root { --sidebar-width: 0px; }
-    
-    /* LOGO LEFT CORNER */
+    :root { 
+        --sidebar-width: 0px; 
+    }
+
+    /* 2.1 Floating Mobile Header (Logo Left) */
     .mobile-header {
         display: flex;
         position: fixed;
         top: 15px;
-        left: 15px; /* Logo shifted to left */
-        z-index: 1000;
+        left: 15px;
+        z-index: 1001;
         padding: 8px 15px;
         background: rgba(9, 9, 11, 0.6);
         backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
+        justify-content: flex-start !important;
+        pointer-events: none; /* Allows clicks to pass through to content if necessary */
     }
 
-    .mobile-logo { width: 110px; height: auto; }
+    .mobile-logo { 
+        width: 110px; 
+        height: auto; 
+    }
 
-    /* BOTTOM NAVIGATION */
+    /* 2.2 Bottom Navigation Transformation */
     .sidebar {
         width: 100%;
         height: 70px;
@@ -44,6 +97,7 @@
         border-top: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px 20px 0 0;
         background: rgba(9, 9, 11, 0.95);
+        z-index: 1000;
     }
 
     .nav-links {
@@ -60,18 +114,78 @@
         gap: 4px;
         font-size: 10px;
         padding: 0.5rem;
+        flex: 1;
+        text-align: center;
     }
 
-    .nav-item span { display: block !important; font-size: 10px; }
-    .nav-item i { font-size: 1.2rem; }
+    .nav-item span { 
+        display: block !important; 
+        font-size: 10px;
+    }
 
+    .nav-item i { 
+        font-size: 1.2rem; 
+    }
+
+    /* Active indicator for mobile bottom-nav */
+    .nav-item.active {
+        border-right: none;
+        border-top: 3px solid var(--accent-cyan);
+        background: rgba(6, 182, 212, 0.1);
+    }
+    
+    .nav-item.active::before {
+        display: none; /* Hide the desktop side-bar indicator */
+    }
+
+    /* 2.3 Main Content Offsets */
     .main-content {
         margin-left: 0;
-        padding: 15px;
-        padding-top: 85px;
-        padding-bottom: 90px;
+        padding: 1rem;
+        padding-top: 85px; /* Offset for Mobile Header */
+        padding-bottom: 90px; /* Offset for Bottom Nav */
     }
 
-    .top-bar { flex-direction: column; height: auto; padding: 1rem; gap: 1rem; }
-    .xp-container { width: 100%; }
+    /* 2.4 Component Resizing */
+    .top-bar { 
+        flex-direction: column; 
+        height: auto; 
+        padding: 1rem; 
+        gap: 1rem; 
+    }
+
+    .xp-container { 
+        width: 100%; 
+    }
+
+    .metric-hub, 
+    .overview-grid, 
+    .journal-grid,
+    .charts-main-grid,
+    .charts-secondary-grid { 
+        grid-template-columns: 1fr !important; 
+    }
+
+    .evolution-card { 
+        grid-column: auto; 
+    }
+
+    .hero-content { 
+        flex-direction: column; 
+        align-items: flex-start; 
+    }
+
+    .daily-mission-card { 
+        width: 100%; 
+    }
+
+    /* Study Module Timer Scaling */
+    .dynamic-island-timer { 
+        width: 220px; 
+        height: 220px; 
+    }
+
+    .timer-display { 
+        font-size: 3.5rem; 
+    }
 }
